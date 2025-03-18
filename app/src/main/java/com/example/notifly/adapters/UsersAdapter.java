@@ -1,4 +1,4 @@
-package com.example.notiflyai.adapters;
+package com.example.notifly.adapters;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -6,7 +6,7 @@ import android.view.ViewGroup;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.notifly.databinding.ItemUserBinding;
-import com.example.notiflyai.models.User;
+import com.example.notifly.models.User;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package com.example.notiflyai;
+package com.example.notifly;
 
 import android.content.Context;
 

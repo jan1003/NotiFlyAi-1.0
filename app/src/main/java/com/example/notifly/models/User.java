@@ -1,4 +1,4 @@
-package com.example.notiflyai.models;
+package com.example.notifly.models;
 
 public class User {
     private String userId;

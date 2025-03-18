@@ -1,11 +1,11 @@
-package com.example.notiflyai.adapters;
+package com.example.notifly.adapters;
 
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.notifly.databinding.ItemMessageBinding;
-import com.example.notiflyai.models.Message;
+import com.example.notifly.models.Message;
 
 import java.util.List;
 

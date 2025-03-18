@@ -1,4 +1,4 @@
-package com.example.notiflyai;
+package com.example.notifly;
 
 import okhttp3.*;
 import org.json.JSONArray;

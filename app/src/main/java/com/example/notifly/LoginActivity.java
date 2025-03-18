@@ -1,4 +1,4 @@
-package com.example.notiflyai;
+package com.example.notifly;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
