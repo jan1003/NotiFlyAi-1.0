@@ -1,9 +1,13 @@
 package com.example.notifly;
 
+
+import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Patterns;
 import android.view.View;
 import android.widget.Toast;
 
@@ -15,6 +19,7 @@ import com.google.firebase.auth.*;
 import com.google.firebase.firestore.*;
 
 public class RegisterActivity extends AppCompatActivity {
+
     private FirebaseAuth mAuth;
     private FirebaseFirestore db;
     private ActivityRegisterBinding binding;
@@ -26,7 +31,7 @@ public class RegisterActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         mAuth = FirebaseAuth.getInstance();
-        db = FirebaseFirestore.getInstance(); // Инициализация Firestore
+        db = FirebaseFirestore.getInstance();
 
         binding.btnRegister.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -34,14 +39,26 @@ public class RegisterActivity extends AppCompatActivity {
                 registerUser();
             }
         });
+
+        binding.tvGoToLogin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
+                finish();
+            }
+        });
     }
 
     private void registerUser() {
-        String email = binding.etName.getText().toString().trim();
-        String pass = binding.etEmail.getText().toString().trim();
+        String email = binding.etEmail.getText().toString().trim();
+        String pass = binding.etPassword.getText().toString().trim();
 
-        if (email.isEmpty() || pass.isEmpty()) {
-            toast("Введите корректные данные для регистрации");
+        if (!isValidEmail(email)) {
+            binding.etEmail.setError("Введите корректный email");
+            return;
+        }
+        if (pass.length() < 6) {
+            binding.etPassword.setError("Пароль должен содержать минимум 6 символов");
             return;
         }
 
@@ -52,21 +69,35 @@ public class RegisterActivity extends AppCompatActivity {
                         if (task.isSuccessful()) {
                             FirebaseUser fUser = mAuth.getCurrentUser();
                             if (fUser != null) {
-                                String uid = fUser.getUid();
-                                User newUser = new User(uid, "Имя", email, 3);
-
-                                db.collection("users")
-                                        .document(uid)
-                                        .set(newUser)
+                                // Отправляем письмо с подтверждением
+                                fUser.sendEmailVerification()
                                         .addOnCompleteListener(new OnCompleteListener<Void>() {
                                             @Override
-                                            public void onComplete(@NonNull Task<Void> task2) {
-                                                if (task2.isSuccessful()) {
-                                                    toast("Регистрация завершена!");
-                                                    goToUsersActivity();
-                                                    finish();
+                                            public void onComplete(@NonNull Task<Void> emailTask) {
+                                                if (emailTask.isSuccessful()) {
+                                                    // Сохраняем пользователя в Firestore
+                                                    String uid = fUser.getUid();
+                                                    // Здесь "Имя" — это просто пример.
+                                                    // Если хотите, чтобы пользователь вводил имя, добавьте поле EditText для имени.
+                                                    User newUser = new User(uid, "Имя", email, 3);
+
+                                                    db.collection("users")
+                                                            .document(uid)
+                                                            .set(newUser)
+                                                            .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                                                @Override
+                                                                public void onComplete(@NonNull Task<Void> task2) {
+                                                                    if (task2.isSuccessful()) {
+                                                                        Log.d("DEBUG", "Документ для пользователя " + uid + " успешно добавлен в Firestore.");
+                                                                        // ...
+                                                                    } else {
+                                                                        Log.e("DEBUG", "Ошибка сохранения профиля: " + task2.getException().getMessage());
+                                                                        // ...
+                                                                    }
+                                                                }
+                                                            });
                                                 } else {
-                                                    toast("Ошибка сохранения профиля: " + task2.getException().getMessage());
+                                                    toast("Не удалось отправить письмо с подтверждением: " + emailTask.getException().getMessage());
                                                 }
                                             }
                                         });
@@ -78,12 +109,11 @@ public class RegisterActivity extends AppCompatActivity {
                 });
     }
 
-    private void toast(String message) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+    private boolean isValidEmail(String email) {
+        return Patterns.EMAIL_ADDRESS.matcher(email).matches();
     }
 
-    private void goToUsersActivity() {
-        Intent intent = new Intent(this, UsersActivity.class);
-        startActivity(intent);
+    private void toast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 }

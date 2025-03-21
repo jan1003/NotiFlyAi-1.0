@@ -18,6 +18,15 @@ android {
         viewBinding = true
     }
 }
+configurations.all {
+    resolutionStrategy {
+        eachDependency {
+            if ((requested.group == "org.jetbrains.kotlin") && (requested.name.startsWith("kotlin-stdlib"))) {
+                useVersion("1.8.22")
+            }
+        }
+    }
+}
 
 dependencies {
     // AndroidX + UI
@@ -42,16 +51,15 @@ dependencies {
     implementation("androidx.activity:activity-ktx:1.8.0")
 
     // Constraints для устранения конфликтов версий
-    constraints {
-        implementation("androidx.core:core-ktx") {
-            version {
-                strictly("1.12.0")
-            }
-        }
-        implementation("org.jetbrains.kotlin:kotlin-stdlib") {
-            version {
-                strictly("1.8.22")
-            }
-        }
+//    constraints {
+//        implementation("androidx.core:core-ktx") {
+//            version {
+//                strictly("1.12.0")
+//            }
+//        }
+//        implementation("org.jetbrains.kotlin:kotlin-stdlib") {
+//            version {
+//                strictly("1.8.22")
+//            }
+//        }
     }
-}

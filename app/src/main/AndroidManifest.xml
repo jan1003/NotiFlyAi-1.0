@@ -28,6 +28,8 @@
         <!-- ChatActivity -->
         <activity android:name="com.example.notifly.ChatActivity" />
 
+        <activity android:name=".SettingsActivity"/>
+
         <!-- Firebase push service -->
         <service
             android:name="com.example.notifly.PushService"

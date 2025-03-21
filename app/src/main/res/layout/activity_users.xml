@@ -10,29 +10,30 @@
         android:id="@+id/rvUsers"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_margin="16dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/btnSignOut"
+        app:layout_constraintBottom_toTopOf="@+id/btnSettings"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        android:layout_margin="16dp"/>
+        app:layout_constraintRight_toRightOf="parent" />
 
-    <!-- Переключатель Busy Mode -->
-    <com.google.android.material.switchmaterial.SwitchMaterial
-        android:id="@+id/switchBusyMode"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Busy Mode"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        android:layout_margin="16dp"/>
-
-    <!-- Кнопка выхода -->
+    <!-- Кнопка Начать чат -->
     <Button
-        android:id="@+id/btnSignOut"
+        android:id="@+id/btnStartChat"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Выйти"
+        android:text="Начать чат"
+        android:layout_margin="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        android:layout_margin="16dp"/>
+        app:layout_constraintLeft_toLeftOf="parent" />
+
+    <!-- Кнопка Настройки -->
+    <Button
+        android:id="@+id/btnSettings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Настройки"
+        android:layout_margin="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
