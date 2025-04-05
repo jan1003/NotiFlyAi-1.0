@@ -75,11 +75,8 @@ public class RegisterActivity extends AppCompatActivity {
                                             @Override
                                             public void onComplete(@NonNull Task<Void> emailTask) {
                                                 if (emailTask.isSuccessful()) {
-                                                    // Сохраняем пользователя в Firestore
                                                     String uid = fUser.getUid();
-                                                    // Здесь "Имя" — это просто пример.
-                                                    // Если хотите, чтобы пользователь вводил имя, добавьте поле EditText для имени.
-                                                    User newUser = new User(uid, "Имя", email, 3);
+                                                    User newUser = new User(uid, "Имя", email);
 
                                                     db.collection("users")
                                                             .document(uid)

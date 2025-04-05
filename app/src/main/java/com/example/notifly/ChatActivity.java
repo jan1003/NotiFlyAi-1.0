@@ -38,6 +38,7 @@ public class ChatActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         super.onCreate(savedInstanceState);
         binding = ActivityChatBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -177,7 +178,15 @@ public class ChatActivity extends AppCompatActivity {
                             binding.etMessage.setText("");
                         }
                     }
+
+
                 });
+
+    }
+    @Override
+    public boolean onSupportNavigateUp() {
+        finish(); // Закрывает текущее Activity и возвращается назад
+        return true;
     }
 
     private void toast(String msg) {

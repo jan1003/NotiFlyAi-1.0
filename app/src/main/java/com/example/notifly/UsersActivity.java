@@ -1,11 +1,6 @@
 package com.example.notifly;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-
-import android.content.DialogInterface;
+import com.example.notifly.models.Contact;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputType;
@@ -13,16 +8,25 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+
 import com.example.notifly.adapters.UsersAdapter;
 import com.example.notifly.databinding.ActivityUsersBinding;
 import com.example.notifly.models.User;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.auth.*;
-import com.google.firebase.firestore.*;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class UsersActivity extends AppCompatActivity {
 
@@ -32,6 +36,7 @@ public class UsersActivity extends AppCompatActivity {
 
     private UsersAdapter usersAdapter;
     private List<User> userList = new ArrayList<>();
+    private Map<String, Integer> priorityMap = new HashMap<>();
 
     private String myUid = "";
 
@@ -44,76 +49,72 @@ public class UsersActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
 
-        // Если пользователь не авторизован — сразу на экран логина
         if (mAuth.getCurrentUser() == null) {
             startActivity(new Intent(this, LoginActivity.class));
             finish();
             return;
         }
+
         myUid = mAuth.getCurrentUser().getUid();
 
-        // Кнопка "Настройки"
-        binding.btnSettings.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(new Intent(UsersActivity.this, SettingsActivity.class));
-            }
-        });
-
-        // Кнопка "Начать чат"
-        binding.btnStartChat.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showNewChatDialog();
-            }
-        });
+        binding.btnSettings.setOnClickListener(v -> startActivity(new Intent(UsersActivity.this, SettingsActivity.class)));
+        binding.btnStartChat.setOnClickListener(v -> showNewChatDialog());
 
         setupUsersAdapter();
-        loadUsers();
+        loadPrioritiesThenUsers();
     }
 
-    /**
-     * Настраиваем адаптер для списка пользователей
-     */
     private void setupUsersAdapter() {
-        usersAdapter = new UsersAdapter(userList, new UsersAdapter.OnUserClickListener() {
-            @Override
-            public void onUserClick(User user) {
-                openChatWithUser(user);
-            }
-        });
+        usersAdapter = new UsersAdapter(userList, priorityMap, user -> openChatWithUser(user));
         binding.rvUsers.setLayoutManager(new LinearLayoutManager(this));
         binding.rvUsers.setAdapter(usersAdapter);
     }
 
-    /**
-     * Загружаем всех пользователей из Firestore, кроме себя
-     */
-    private void loadUsers() {
-        db.collection("users").get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if(task.isSuccessful()) {
-                            userList.clear();
-                            for(DocumentSnapshot doc : task.getResult()) {
-                                User user = doc.toObject(User.class);
-                                if(user != null && !user.getUserId().equals(myUid)) {
-                                    userList.add(user);
-                                }
-                            }
-                            usersAdapter.notifyDataSetChanged();
-                        } else {
-                            toast("Ошибка загрузки: " + task.getException().getMessage());
-                        }
+    private void loadPrioritiesThenUsers() {
+        db.collection("contacts").document(myUid).collection("list").get()
+                .addOnSuccessListener(snapshot -> {
+                    priorityMap.clear();
+                    for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                        Integer p = doc.getLong("priority") != null ? doc.getLong("priority").intValue() : 3;
+                        priorityMap.put(doc.getId(), p);
                     }
+                    loadUsers();
                 });
     }
 
-    /**
-     * Показываем диалог: пользователь вводит email,
-     * по которому будет найден собеседник в Firestore
-     */
+
+        private void loadUsers() {
+            db.collection("users").get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            userList.clear();
+                            for (DocumentSnapshot doc : task.getResult()) {
+                                User user = doc.toObject(User.class);
+                                if (user != null && !user.getUserId().equals(myUid)) {
+                                    final User currentUser = user;
+                                    db.collection("contacts")
+                                            .document(myUid)
+                                            .collection("list")
+                                            .document(currentUser.getUserId())
+                                            .get()
+                                            .addOnSuccessListener(priorityDoc -> {
+                                                int priority = 3;
+                                                if (priorityDoc.exists()) {
+                                                    Long pr = priorityDoc.getLong("priority");
+                                                    if (pr != null) priority = pr.intValue();
+                                                }
+                                                currentUser.setPriority(priority);
+                                                userList.add(currentUser);
+                                                usersAdapter.notifyDataSetChanged();
+                                            });
+                                }
+                            }
+                        } else {
+                            toast("Ошибка загрузки: " + task.getException().getMessage());
+                        }
+                    });
+        }
+
     private void showNewChatDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Введите email пользователя");
@@ -123,68 +124,96 @@ public class UsersActivity extends AppCompatActivity {
         input.setInputType(InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         builder.setView(input);
 
-        // Кнопка "Начать чат" в диалоге
-        builder.setPositiveButton("Начать чат", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                String enteredEmail = input.getText().toString().trim();
-                if (!enteredEmail.isEmpty()) {
-                    findUserByEmail(enteredEmail);
-                } else {
-                    toast("Email не может быть пустым");
-                }
+        builder.setPositiveButton("Начать чат", (dialog, which) -> {
+            String enteredEmail = input.getText().toString().trim();
+            if (!enteredEmail.isEmpty()) {
+                findUserByEmail(enteredEmail);
+            } else {
+                toast("Email не может быть пустым");
             }
         });
 
-        // Кнопка "Отмена"
         builder.setNegativeButton("Отмена", null);
-
         builder.show();
     }
 
-    /**
-     * Ищем пользователя в Firestore по email
-     */
     private void findUserByEmail(String email) {
         db.collection("users")
                 .whereEqualTo("email", email)
                 .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-                            QuerySnapshot snapshot = task.getResult();
-                            if (snapshot != null && !snapshot.isEmpty()) {
-                                // Берём первого найденного пользователя
-                                DocumentSnapshot doc = snapshot.getDocuments().get(0);
-                                User user = doc.toObject(User.class);
-
-                                if(user != null) {
-                                    openChatWithUser(user);
-                                } else {
-                                    toast("Пользователь не найден");
-                                }
-                            } else {
-                                toast("Пользователь с таким email не найден");
-                            }
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        List<DocumentSnapshot> docs = task.getResult().getDocuments();
+                        if (!docs.isEmpty()) {
+                            User user = docs.get(0).toObject(User.class);
+                            if (user != null) openChatWithUser(user);
                         } else {
-                            toast("Ошибка поиска: " + task.getException().getMessage());
+                            toast("Пользователь не найден");
                         }
+                    } else {
+                        toast("Ошибка поиска: " + task.getException().getMessage());
                     }
                 });
     }
 
-    /**
-     * Открываем ChatActivity с указанным пользователем
-     */
     private void openChatWithUser(User user) {
+        // Սկզբում ստուգում ենք՝ արդյոք կա պահված priotity տվյալ
+        db.collection("contacts")
+                .document(myUid)
+                .collection("list")
+                .document(user.getUserId())
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists() && doc.contains("priority")) {
+                        int savedPriority = doc.getLong("priority").intValue();
+                        // եթե արդեն պահված է՝ միանգամից բացել չաթը
+                        goToChat(user, savedPriority);
+                    } else {
+                        // եթե պահված չի՝ հարցնել priotity
+                        askPriorityAndStartChat(user);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    toast("Սխալ տվյալ ստանալու ժամանակ: " + e.getMessage());
+                });
+    }
+
+    private void askPriorityAndStartChat(User user) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Ընտրեք priotity " + user.getName() + " համար");
+
+        final EditText input = new EditText(this);
+        input.setHint("1 - 5");
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        builder.setView(input);
+
+        builder.setPositiveButton("Շարունակել", (dialog, which) -> {
+            int priority = 3;
+            try {
+                priority = Integer.parseInt(input.getText().toString().trim());
+            } catch (NumberFormatException ignored) {}
+
+            // պահում ենք Firestore-ում
+            db.collection("contacts")
+                    .document(myUid)
+                    .collection("list")
+                    .document(user.getUserId())
+                    .set(new Contact(user.getUserId(), priority));
+
+            goToChat(user, priority);
+        });
+
+        builder.setNegativeButton("Չեղարկել", null);
+        builder.show();
+    }
+
+    private void goToChat(User user, int priority) {
         Intent i = new Intent(UsersActivity.this, ChatActivity.class);
         i.putExtra("receiverId", user.getUserId());
         i.putExtra("receiverName", user.getName());
-        i.putExtra("receiverPriority", user.getPriority());
+        i.putExtra("receiverPriority", priority);
         startActivity(i);
     }
-
     private void toast(String msg) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }

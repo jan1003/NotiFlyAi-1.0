@@ -37,26 +37,15 @@
         app:layout_constraintRight_toRightOf="parent"
         android:layout_marginTop="16dp"/>
 
-    <EditText
-        android:id="@+id/etPriority"
-        android:layout_width="250dp"
-        android:layout_height="wrap_content"
-        android:hint="Приоритет (1..5)"
-        android:inputType="number"
-        app:layout_constraintTop_toBottomOf="@+id/etPassword"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginTop="16dp"/>
-
     <Button
         android:id="@+id/btnRegister"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Зарегистрироваться"
-        app:layout_constraintTop_toBottomOf="@+id/etPriority"
+        app:layout_constraintTop_toBottomOf="@+id/etPassword"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginTop="16dp"/>
+        android:layout_marginTop="24dp"/>
 
     <TextView
         android:id="@+id/tvGoToLogin"
